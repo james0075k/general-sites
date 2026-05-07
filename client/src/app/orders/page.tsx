@@ -8,6 +8,8 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
+import { BsBoxSeam } from "react-icons/bs";
+import { IoCheckmarkCircle } from "react-icons/io5";
 
 interface OrderItem { name: string; quantity: number; price: number; }
 interface Order {
@@ -79,7 +81,7 @@ function OrdersContent() {
 
         {successId && (
           <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-4 rounded-xl flex items-center gap-3">
-            <span className="text-2xl">✅</span>
+            <IoCheckmarkCircle size={28} className="shrink-0" />
             <div>
               <p className="font-semibold">Order placed successfully!</p>
               <p className="text-sm">Order ID: {successId}</p>
@@ -89,7 +91,9 @@ function OrdersContent() {
 
         {orders.length === 0 ? (
           <div className="bg-surface rounded-2xl border border-border py-20 text-center">
-            <p className="text-5xl mb-4">📦</p>
+            <div className="flex justify-center mb-4 text-text-muted">
+              <BsBoxSeam size={52} />
+            </div>
             <p className="text-lg font-semibold text-text-primary mb-1">No orders yet</p>
             <p className="text-text-muted text-sm mb-6">Start shopping to see your orders here</p>
             <Link href="/products" className="inline-block bg-secondary text-white font-semibold px-6 py-3 rounded-xl hover:bg-secondary/90 transition-colors">

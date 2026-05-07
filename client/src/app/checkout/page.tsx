@@ -10,12 +10,21 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { IoArrowBack, IoClose, IoLockClosed } from "react-icons/io5";
+import { BsBoxSeam, BsCash, BsWallet2, BsCreditCard2Front } from "react-icons/bs";
+import { HiMinus, HiPlus } from "react-icons/hi";
 
 const PAYMENT_METHODS = [
   { value: "cod", label: "Cash on Delivery", short: "COD", bg: "#0f172a" },
   { value: "khalti", label: "Khalti", short: "Khalti", bg: "#5C2D91" },
   { value: "esewa", label: "eSewa", short: "eSewa", bg: "#60BB46" },
 ];
+
+function PaymentMethodIcon({ method, size = 14 }: { method: string; size?: number }) {
+  if (method === "cod") return <BsCash size={size} />;
+  if (method === "khalti") return <BsWallet2 size={size} />;
+  return <BsCreditCard2Front size={size} />;
+}
 
 export default function CheckoutPage() {
   const { user, loading: authLoading } = useAuth();
@@ -90,7 +99,7 @@ export default function CheckoutPage() {
             href="/cart"
             className="w-9 h-9 flex items-center justify-center rounded-full border border-border bg-surface hover:bg-surface-low transition-colors text-text-secondary"
           >
-            ←
+            <IoArrowBack size={18} />
           </Link>
           <h1 className="text-2xl font-bold text-text-primary tracking-tight">Checkout</h1>
         </div>
@@ -111,8 +120,8 @@ export default function CheckoutPage() {
               <div className="bg-surface rounded-2xl border border-border overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
                 <div className="flex items-center justify-between px-6 pt-6 pb-4">
                   <h2 className="font-bold text-text-primary text-lg">Products</h2>
-                  <Link href="/products" className="text-xs text-secondary hover:text-secondary/80 font-medium transition-colors">
-                    + Add product
+                  <Link href="/products" className="text-xs text-secondary hover:text-secondary/80 font-medium transition-colors flex items-center gap-1">
+                    <HiPlus size={12} /> Add product
                   </Link>
                 </div>
 
@@ -130,7 +139,9 @@ export default function CheckoutPage() {
                           {item.product.images?.[0] ? (
                             <Image src={item.product.images[0]} alt={item.product.name} fill className="object-cover" />
                           ) : (
-                            <div className="absolute inset-0 flex items-center justify-center text-xl">📦</div>
+                            <div className="absolute inset-0 flex items-center justify-center text-text-muted">
+                              <BsBoxSeam size={22} />
+                            </div>
                           )}
                         </div>
 
@@ -155,18 +166,18 @@ export default function CheckoutPage() {
                           <button
                             type="button"
                             onClick={() => updateItem(item.product._id, item.quantity - 1)}
-                            className="w-7 h-7 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-surface-low hover:border-text-muted transition-colors text-sm font-bold"
+                            className="w-7 h-7 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-surface-low hover:border-text-muted transition-colors"
                           >
-                            −
+                            <HiMinus size={12} />
                           </button>
                           <span className="w-6 text-center font-semibold text-text-primary text-sm">{item.quantity}</span>
                           <button
                             type="button"
                             onClick={() => updateItem(item.product._id, item.quantity + 1)}
                             disabled={item.quantity >= item.product.stock}
-                            className="w-7 h-7 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-surface-low hover:border-text-muted disabled:opacity-40 transition-colors text-sm font-bold"
+                            className="w-7 h-7 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-surface-low hover:border-text-muted disabled:opacity-40 transition-colors"
                           >
-                            +
+                            <HiPlus size={12} />
                           </button>
                           <button
                             type="button"
@@ -174,7 +185,7 @@ export default function CheckoutPage() {
                             className="ml-1 w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-red-500 hover:bg-red-50 transition-colors"
                             title="Remove"
                           >
-                            ✕
+                            <IoClose size={14} />
                           </button>
                         </div>
 
@@ -229,7 +240,9 @@ export default function CheckoutPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Order Notes <span className="normal-case font-normal text-text-muted">(optional)</span></label>
+                    <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+                      Order Notes <span className="normal-case font-normal text-text-muted">(optional)</span>
+                    </label>
                     <textarea
                       name="notes" value={form.notes} onChange={handleChange} rows={2}
                       className="w-full border border-border rounded-xl px-4 py-3 text-sm text-text-primary bg-surface focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary transition-colors resize-none placeholder:text-text-muted"
@@ -287,7 +300,7 @@ export default function CheckoutPage() {
                     className="w-full flex items-center justify-between py-3 px-4 rounded-xl border border-border text-sm text-text-secondary hover:border-secondary/40 hover:text-secondary transition-colors"
                   >
                     <span className="font-medium">I have a discount code</span>
-                    <span className="text-lg leading-none">{showDiscount ? "−" : "+"}</span>
+                    {showDiscount ? <HiMinus size={16} /> : <HiPlus size={16} />}
                   </button>
                   {showDiscount && (
                     <div className="mt-2 flex gap-2">
@@ -317,13 +330,14 @@ export default function CheckoutPage() {
                         key={m.value}
                         type="button"
                         onClick={() => setPaymentMethod(m.value)}
-                        className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${
+                        className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all flex flex-col items-center gap-1 ${
                           paymentMethod === m.value
                             ? "border-transparent text-white scale-[1.02] shadow-md"
                             : "border-border text-text-secondary hover:border-secondary/30 bg-surface"
                         }`}
                         style={paymentMethod === m.value ? { backgroundColor: m.bg } : {}}
                       >
+                        <PaymentMethodIcon method={m.value} size={16} />
                         {m.short}
                       </button>
                     ))}
@@ -335,21 +349,19 @@ export default function CheckoutPage() {
                   <button
                     type="submit"
                     disabled={submitting || cart.items.length === 0}
-                    className="w-full flex items-center justify-between bg-primary text-white font-semibold py-4 px-5 rounded-2xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors group"
+                    className="w-full flex items-center justify-between bg-primary text-white font-semibold py-4 px-5 rounded-2xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <span className="text-sm">{submitting ? "Placing Order..." : "Confirm payment"}</span>
                     <span
-                      className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-lg"
+                      className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg"
                       style={{ backgroundColor: selectedMethod.bg === "#0f172a" ? "#1e293b" : selectedMethod.bg }}
                     >
-                      <span>
-                        {selectedMethod.value === "cod" ? "💵" : selectedMethod.value === "khalti" ? "🟣" : "🟢"}
-                      </span>
+                      <PaymentMethodIcon method={selectedMethod.value} size={13} />
                       <span>{selectedMethod.short}</span>
                     </span>
                   </button>
                   <p className="text-xs text-text-muted text-center mt-3 flex items-center justify-center gap-1">
-                    <span>🔒</span>
+                    <IoLockClosed size={12} />
                     <span>Secure &amp; encrypted checkout</span>
                   </p>
                 </div>

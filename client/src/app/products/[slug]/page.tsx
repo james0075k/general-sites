@@ -9,6 +9,9 @@ import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { BsBoxSeam, BsQuestionCircle } from "react-icons/bs";
+import { IoStar } from "react-icons/io5";
+import { HiMinus, HiPlus } from "react-icons/hi";
 
 interface Product {
   _id: string; name: string; slug: string; description: string;
@@ -58,7 +61,9 @@ export default function ProductDetailPage({ params }: Props) {
     <>
       <Navbar />
       <main className="flex-1 max-w-7xl mx-auto px-4 py-16 text-center">
-        <p className="text-6xl mb-4">😕</p>
+        <div className="flex justify-center mb-4 text-text-muted">
+          <BsQuestionCircle size={64} />
+        </div>
         <h1 className="text-2xl font-bold text-text-primary mb-2">Product not found</h1>
         <Link href="/products" className="text-secondary hover:underline text-sm">Back to Products</Link>
       </main>
@@ -100,7 +105,9 @@ export default function ProductDetailPage({ params }: Props) {
               {product.images[imgIdx] ? (
                 <Image src={product.images[imgIdx]} alt={product.name} fill className="object-cover" />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-6xl">📦</div>
+                <div className="absolute inset-0 flex items-center justify-center text-text-muted">
+                  <BsBoxSeam size={64} />
+                </div>
               )}
               {hasDiscount && (
                 <span className="absolute top-3 left-3 bg-tertiary text-white text-sm font-bold px-2.5 py-1 rounded-lg">
@@ -132,7 +139,11 @@ export default function ProductDetailPage({ params }: Props) {
 
             {product.ratings.count > 0 && (
               <div className="flex items-center gap-2 mb-4">
-                <div className="flex text-yellow-400 text-sm">{"★".repeat(Math.round(product.ratings.average))}</div>
+                <div className="flex text-yellow-400 text-sm gap-0.5">
+                  {Array.from({ length: Math.round(product.ratings.average) }).map((_, i) => (
+                    <IoStar key={i} />
+                  ))}
+                </div>
                 <span className="text-sm text-text-secondary">{product.ratings.average.toFixed(1)} ({product.ratings.count} reviews)</span>
               </div>
             )}
@@ -159,9 +170,19 @@ export default function ProductDetailPage({ params }: Props) {
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-sm font-medium text-text-secondary">Qty:</span>
                 <div className="flex items-center border border-border rounded-lg overflow-hidden">
-                  <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="px-3 py-2 text-text-primary hover:bg-surface-low transition-colors text-lg font-medium">−</button>
+                  <button
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    className="px-3 py-2 text-text-primary hover:bg-surface-low transition-colors flex items-center"
+                  >
+                    <HiMinus size={16} />
+                  </button>
                   <span className="px-4 py-2 text-sm font-semibold text-text-primary border-x border-border">{qty}</span>
-                  <button onClick={() => setQty((q) => Math.min(product.stock, q + 1))} className="px-3 py-2 text-text-primary hover:bg-surface-low transition-colors text-lg font-medium">+</button>
+                  <button
+                    onClick={() => setQty((q) => Math.min(product.stock, q + 1))}
+                    className="px-3 py-2 text-text-primary hover:bg-surface-low transition-colors flex items-center"
+                  >
+                    <HiPlus size={16} />
+                  </button>
                 </div>
               </div>
             )}

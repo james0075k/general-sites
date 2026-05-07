@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
 import Loader from "@/components/Loader";
 import { api } from "@/lib/api";
+import { BsBoxSeam, BsShop, BsCash, BsClipboardCheck, BsPeopleFill } from "react-icons/bs";
 
 interface Stats {
   totalRevenue: number;
@@ -26,6 +28,13 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
+interface StatCard {
+  label: string;
+  value: string;
+  icon: ReactNode;
+  color: string;
+}
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,11 +48,11 @@ export default function AdminDashboardPage() {
 
   if (loading) return <Loader fullPage />;
 
-  const STAT_CARDS = [
-    { label: "Total Revenue", value: `NPR ${(stats?.totalRevenue || 0).toLocaleString()}`, icon: "💰", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    { label: "Total Orders", value: String(stats?.totalOrders || 0), icon: "📦", color: "bg-blue-50 text-blue-700 border-blue-200" },
-    { label: "Total Products", value: String(stats?.totalProducts || 0), icon: "🛍️", color: "bg-purple-50 text-purple-700 border-purple-200" },
-    { label: "Total Users", value: String(stats?.totalUsers || 0), icon: "👥", color: "bg-orange-50 text-orange-700 border-orange-200" },
+  const STAT_CARDS: StatCard[] = [
+    { label: "Total Revenue", value: `NPR ${(stats?.totalRevenue || 0).toLocaleString()}`, icon: <BsCash size={22} />, color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+    { label: "Total Orders", value: String(stats?.totalOrders || 0), icon: <BsBoxSeam size={22} />, color: "bg-blue-50 text-blue-700 border-blue-200" },
+    { label: "Total Products", value: String(stats?.totalProducts || 0), icon: <BsShop size={22} />, color: "bg-purple-50 text-purple-700 border-purple-200" },
+    { label: "Total Users", value: String(stats?.totalUsers || 0), icon: <BsPeopleFill size={22} />, color: "bg-orange-50 text-orange-700 border-orange-200" },
   ];
 
   return (
@@ -58,7 +67,7 @@ export default function AdminDashboardPage() {
           <div key={s.label} className={`rounded-xl border p-5 ${s.color}`}>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium opacity-80">{s.label}</p>
-              <span className="text-2xl">{s.icon}</span>
+              <span className="flex items-center justify-center opacity-80">{s.icon}</span>
             </div>
             <p className="text-2xl font-bold">{s.value}</p>
           </div>
@@ -71,7 +80,9 @@ export default function AdminDashboardPage() {
         </div>
         {!stats?.recentOrders?.length ? (
           <div className="py-12 text-center text-text-muted">
-            <p className="text-3xl mb-2">📋</p>
+            <div className="flex justify-center mb-2">
+              <BsClipboardCheck size={32} />
+            </div>
             <p className="text-sm">No orders yet</p>
           </div>
         ) : (

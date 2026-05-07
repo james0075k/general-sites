@@ -6,6 +6,8 @@ import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { BsBoxSeam } from "react-icons/bs";
+import { IoStar } from "react-icons/io5";
 
 interface Product {
   _id: string;
@@ -49,8 +51,8 @@ export default function ProductCard({ product }: { product: Product }) {
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-text-muted text-4xl">
-              📦
+            <div className="absolute inset-0 flex items-center justify-center text-text-muted">
+              <BsBoxSeam size={40} />
             </div>
           )}
           {hasDiscount && (
@@ -76,7 +78,7 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
           {product.ratings.count > 0 && (
             <div className="mt-1 flex items-center gap-1 text-xs text-text-muted">
-              <span className="text-yellow-400">★</span>
+              <IoStar className="text-yellow-400" />
               <span>{product.ratings.average.toFixed(1)}</span>
               <span>({product.ratings.count})</span>
             </div>

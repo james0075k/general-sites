@@ -1,7 +1,10 @@
+import type { ReactNode } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
+import { HiOutlineTruck, HiOutlineLockClosed, HiOutlineRefresh } from "react-icons/hi";
+import { BsBasket2, BsLaptop, BsBagHeart, BsHouseDoor, BsCupHot, BsTrophy, BsShop } from "react-icons/bs";
 
 async function getFeaturedProducts() {
   try {
@@ -30,14 +33,20 @@ async function getCategories() {
   }
 }
 
-const CATEGORY_ICONS: Record<string, string> = {
-  handicrafts: "🏺",
-  electronics: "💻",
-  fashion: "👗",
-  "home-living": "🏠",
-  food: "🍵",
-  sports: "⚽",
+const CATEGORY_ICONS: Record<string, ReactNode> = {
+  handicrafts: <BsBasket2 size={30} />,
+  electronics: <BsLaptop size={30} />,
+  fashion: <BsBagHeart size={30} />,
+  "home-living": <BsHouseDoor size={30} />,
+  food: <BsCupHot size={30} />,
+  sports: <BsTrophy size={30} />,
 };
+
+const TRUST_BADGES = [
+  { icon: <HiOutlineTruck size={28} />, title: "Fast Delivery", desc: "Across all major cities in Nepal" },
+  { icon: <HiOutlineLockClosed size={28} />, title: "Secure Payments", desc: "Khalti, eSewa, COD supported" },
+  { icon: <HiOutlineRefresh size={28} />, title: "Easy Returns", desc: "Hassle-free 7-day return policy" },
+];
 
 export default async function HomePage() {
   const [featured, categories] = await Promise.all([getFeaturedProducts(), getCategories()]);
@@ -81,13 +90,9 @@ export default async function HomePage() {
         {/* Trust badges */}
         <section className="bg-surface border-b border-border">
           <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            {[
-              { icon: "🚚", title: "Fast Delivery", desc: "Across all major cities in Nepal" },
-              { icon: "🔒", title: "Secure Payments", desc: "Khalti, eSewa, COD supported" },
-              { icon: "↩️", title: "Easy Returns", desc: "Hassle-free 7-day return policy" },
-            ].map((f) => (
+            {TRUST_BADGES.map((f) => (
               <div key={f.title} className="flex items-center justify-center gap-3 py-2">
-                <span className="text-2xl">{f.icon}</span>
+                <span className="text-text-secondary">{f.icon}</span>
                 <div className="text-left">
                   <p className="font-semibold text-text-primary text-sm">{f.title}</p>
                   <p className="text-text-muted text-xs">{f.desc}</p>
@@ -113,8 +118,8 @@ export default async function HomePage() {
                   href={`/products?category=${cat._id}`}
                   className="bg-surface rounded-xl border border-border p-4 text-center hover:border-secondary/50 hover:shadow-md transition-all group"
                 >
-                  <div className="text-3xl mb-2">
-                    {CATEGORY_ICONS[cat.slug] || "🛍️"}
+                  <div className="flex justify-center mb-2 text-text-secondary group-hover:text-secondary transition-colors">
+                    {CATEGORY_ICONS[cat.slug] ?? <BsShop size={30} />}
                   </div>
                   <p className="text-sm font-medium text-text-primary group-hover:text-secondary transition-colors">
                     {cat.name}
@@ -141,7 +146,9 @@ export default async function HomePage() {
             </div>
           ) : (
             <div className="bg-surface rounded-xl border border-border py-16 text-center text-text-muted">
-              <p className="text-4xl mb-3">🛍️</p>
+              <div className="flex justify-center mb-3">
+                <BsShop size={48} />
+              </div>
               <p className="font-medium">Products coming soon</p>
               <p className="text-sm mt-1">Check back later for new arrivals</p>
             </div>

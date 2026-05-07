@@ -9,6 +9,9 @@ import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { BsCart3, BsBoxSeam } from "react-icons/bs";
+import { HiMinus, HiPlus } from "react-icons/hi";
+import { IoLockClosed } from "react-icons/io5";
 
 export default function CartPage() {
   const { user, loading: authLoading } = useAuth();
@@ -44,7 +47,9 @@ export default function CartPage() {
 
         {cart.items.length === 0 ? (
           <div className="bg-surface rounded-2xl border border-border py-20 text-center">
-            <p className="text-5xl mb-4">🛒</p>
+            <div className="flex justify-center mb-4 text-text-muted">
+              <BsCart3 size={52} />
+            </div>
             <p className="text-lg font-semibold text-text-primary mb-1">Your cart is empty</p>
             <p className="text-text-muted text-sm mb-6">Add some products to get started</p>
             <Link
@@ -68,7 +73,9 @@ export default function CartPage() {
                     {item.product.images?.[0] ? (
                       <Image src={item.product.images[0]} alt={item.product.name} fill className="object-cover" />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-2xl">📦</div>
+                      <div className="absolute inset-0 flex items-center justify-center text-text-muted">
+                        <BsBoxSeam size={24} />
+                      </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -80,14 +87,18 @@ export default function CartPage() {
                       <div className="flex items-center border border-border rounded-lg overflow-hidden">
                         <button
                           onClick={() => updateItem(item.product._id, item.quantity - 1)}
-                          className="px-2.5 py-1 text-text-primary hover:bg-surface-low transition-colors"
-                        >−</button>
+                          className="px-2.5 py-1.5 text-text-primary hover:bg-surface-low transition-colors flex items-center"
+                        >
+                          <HiMinus size={14} />
+                        </button>
                         <span className="px-3 py-1 text-sm font-semibold border-x border-border">{item.quantity}</span>
                         <button
                           onClick={() => updateItem(item.product._id, item.quantity + 1)}
                           disabled={item.quantity >= item.product.stock}
-                          className="px-2.5 py-1 text-text-primary hover:bg-surface-low disabled:opacity-40 transition-colors"
-                        >+</button>
+                          className="px-2.5 py-1.5 text-text-primary hover:bg-surface-low disabled:opacity-40 transition-colors flex items-center"
+                        >
+                          <HiPlus size={14} />
+                        </button>
                       </div>
                       <button
                         onClick={() => removeItem(item.product._id)}
@@ -138,8 +149,9 @@ export default function CartPage() {
                 >
                   Proceed to Checkout
                 </Link>
-                <p className="text-xs text-text-muted text-center mt-3">
-                  🔒 Secure checkout — your data is protected
+                <p className="text-xs text-text-muted text-center mt-3 flex items-center justify-center gap-1">
+                  <IoLockClosed size={12} />
+                  <span>Secure checkout — your data is protected</span>
                 </p>
                 {subtotal < 5000 && subtotal > 0 && (
                   <p className="text-xs text-center mt-2 text-tertiary">

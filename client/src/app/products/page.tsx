@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import Loader from "@/components/Loader";
+import { HiOutlineSearch } from "react-icons/hi";
 
 interface Category { _id: string; name: string; slug: string; }
 interface Product {
@@ -87,8 +88,9 @@ export default function ProductsPage() {
             />
             <button
               type="submit"
-              className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary/90 transition-colors"
+              className="px-4 py-2 bg-secondary text-white rounded-lg text-sm font-medium hover:bg-secondary/90 transition-colors flex items-center gap-1.5"
             >
+              <HiOutlineSearch size={16} />
               Search
             </button>
           </form>
@@ -157,7 +159,9 @@ export default function ProductsPage() {
               <div className="flex items-center justify-center py-20"><Loader size="lg" /></div>
             ) : products.length === 0 ? (
               <div className="bg-surface rounded-xl border border-border py-20 text-center text-text-muted">
-                <p className="text-4xl mb-3">🔍</p>
+                <div className="flex justify-center mb-3">
+                  <HiOutlineSearch size={48} />
+                </div>
                 <p className="font-medium text-text-primary">No products found</p>
                 <p className="text-sm mt-1">Try a different search or category</p>
               </div>
