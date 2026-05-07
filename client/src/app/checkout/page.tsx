@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Loader from "@/components/Loader";
+import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -11,18 +12,20 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 
 const PAYMENT_METHODS = [
-  { value: "cod", label: "Cash on Delivery", icon: "💵" },
-  { value: "khalti", label: "Khalti", icon: "🟣" },
-  { value: "esewa", label: "eSewa", icon: "🟢" },
+  { value: "cod", label: "Cash on Delivery", short: "COD", bg: "#0f172a" },
+  { value: "khalti", label: "Khalti", short: "Khalti", bg: "#5C2D91" },
+  { value: "esewa", label: "eSewa", short: "eSewa", bg: "#60BB46" },
 ];
 
 export default function CheckoutPage() {
   const { user, loading: authLoading } = useAuth();
-  const { cart, fetchCart, clearCart } = useCart();
+  const { cart, fetchCart, updateItem, removeItem, clearCart } = useCart();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [showDiscount, setShowDiscount] = useState(false);
+  const [discountCode, setDiscountCode] = useState("");
   const [form, setForm] = useState({
     street: "", city: "", state: "", postalCode: "", notes: "",
   });
@@ -70,122 +73,290 @@ export default function CheckoutPage() {
   );
 
   const subtotal = cart.totalPrice;
-  const shipping = subtotal >= 5000 ? 0 : 100;
+  const shipping = subtotal >= 5000 ? 0 : subtotal === 0 ? 0 : 100;
   const vat = Math.round(subtotal * 0.13 * 100) / 100;
   const total = subtotal + shipping + vat;
+  const itemCount = cart.items.reduce((s, i) => s + i.quantity, 0);
+  const selectedMethod = PAYMENT_METHODS.find((m) => m.value === paymentMethod)!;
 
   return (
     <>
       <Navbar />
-      <main className="flex-1 max-w-5xl mx-auto px-4 py-8">
-        <div className="flex items-center gap-3 mb-6">
-          <Link href="/cart" className="text-text-muted hover:text-secondary text-sm">← Cart</Link>
-          <span className="text-text-muted">/</span>
-          <h1 className="text-xl font-bold text-text-primary">Checkout</h1>
+      <main className="flex-1 max-w-6xl mx-auto px-4 py-10">
+
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <Link
+            href="/cart"
+            className="w-9 h-9 flex items-center justify-center rounded-full border border-border bg-surface hover:bg-surface-low transition-colors text-text-secondary"
+          >
+            ←
+          </Link>
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Checkout</h1>
         </div>
 
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>
+          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm font-medium">
+            {error}
+          </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-5">
-              <div className="bg-surface rounded-xl border border-border p-6" style={{ boxShadow: "var(--shadow-card)" }}>
-                <h2 className="font-bold text-text-primary mb-4">Shipping Address</h2>
+          <div className="grid lg:grid-cols-5 gap-8">
+
+            {/* ── LEFT: Products + Shipping + Notes ── */}
+            <div className="lg:col-span-3 space-y-6">
+
+              {/* Products section */}
+              <div className="bg-surface rounded-2xl border border-border overflow-hidden" style={{ boxShadow: "var(--shadow-card)" }}>
+                <div className="flex items-center justify-between px-6 pt-6 pb-4">
+                  <h2 className="font-bold text-text-primary text-lg">Products</h2>
+                  <Link href="/products" className="text-xs text-secondary hover:text-secondary/80 font-medium transition-colors">
+                    + Add product
+                  </Link>
+                </div>
+
+                {cart.items.length === 0 ? (
+                  <div className="px-6 pb-6 text-center text-text-muted text-sm py-8">
+                    Your cart is empty.{" "}
+                    <Link href="/products" className="text-secondary underline">Browse products</Link>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {cart.items.map((item) => (
+                      <div key={item._id} className="flex items-center gap-4 px-6 py-4">
+                        {/* Product image */}
+                        <div className="relative h-16 w-16 shrink-0 rounded-xl overflow-hidden bg-surface-low border border-border">
+                          {item.product.images?.[0] ? (
+                            <Image src={item.product.images[0]} alt={item.product.name} fill className="object-cover" />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center text-xl">📦</div>
+                          )}
+                        </div>
+
+                        {/* Product info */}
+                        <div className="flex-1 min-w-0">
+                          <Link
+                            href={`/products/${item.product.slug}`}
+                            className="font-semibold text-text-primary text-sm leading-snug line-clamp-1 hover:text-secondary transition-colors"
+                          >
+                            {item.product.name}
+                          </Link>
+                          <p className="text-xs text-text-muted mt-0.5 uppercase tracking-wide">
+                            {item.product.category ?? "Neplai"}
+                          </p>
+                          <p className="text-secondary font-bold text-sm mt-1">
+                            NPR {item.price.toLocaleString()}
+                          </p>
+                        </div>
+
+                        {/* Qty controls */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => updateItem(item.product._id, item.quantity - 1)}
+                            className="w-7 h-7 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-surface-low hover:border-text-muted transition-colors text-sm font-bold"
+                          >
+                            −
+                          </button>
+                          <span className="w-6 text-center font-semibold text-text-primary text-sm">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateItem(item.product._id, item.quantity + 1)}
+                            disabled={item.quantity >= item.product.stock}
+                            className="w-7 h-7 rounded-full border border-border flex items-center justify-center text-text-secondary hover:bg-surface-low hover:border-text-muted disabled:opacity-40 transition-colors text-sm font-bold"
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.product._id)}
+                            className="ml-1 w-7 h-7 rounded-full flex items-center justify-center text-text-muted hover:text-red-500 hover:bg-red-50 transition-colors"
+                            title="Remove"
+                          >
+                            ✕
+                          </button>
+                        </div>
+
+                        {/* Line total */}
+                        <div className="text-right shrink-0 w-24">
+                          <p className="font-bold text-text-primary text-sm">
+                            NPR {(item.price * item.quantity).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Shipping address */}
+              <div className="bg-surface rounded-2xl border border-border p-6" style={{ boxShadow: "var(--shadow-card)" }}>
+                <h2 className="font-bold text-text-primary text-lg mb-5">Delivery Address</h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-text-secondary mb-1">Street Address *</label>
-                    <input name="street" value={form.street} onChange={handleChange} required
-                      className="w-full border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-secondary/40"
-                      placeholder="House no., Street, Area" />
+                    <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Street Address *</label>
+                    <input
+                      name="street" value={form.street} onChange={handleChange} required
+                      className="w-full border border-border rounded-xl px-4 py-3 text-sm text-text-primary bg-surface focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary transition-colors placeholder:text-text-muted"
+                      placeholder="House no., Street, Area"
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-1">City *</label>
-                      <input name="city" value={form.city} onChange={handleChange} required
-                        className="w-full border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-secondary/40"
-                        placeholder="Kathmandu" />
+                      <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">City *</label>
+                      <input
+                        name="city" value={form.city} onChange={handleChange} required
+                        className="w-full border border-border rounded-xl px-4 py-3 text-sm text-text-primary bg-surface focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary transition-colors placeholder:text-text-muted"
+                        placeholder="Kathmandu"
+                      />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-text-secondary mb-1">State</label>
-                      <input name="state" value={form.state} onChange={handleChange}
-                        className="w-full border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-secondary/40"
-                        placeholder="Bagmati" />
+                      <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">State / Province</label>
+                      <input
+                        name="state" value={form.state} onChange={handleChange}
+                        className="w-full border border-border rounded-xl px-4 py-3 text-sm text-text-primary bg-surface focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary transition-colors placeholder:text-text-muted"
+                        placeholder="Bagmati"
+                      />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-text-secondary mb-1">Postal Code</label>
-                    <input name="postalCode" value={form.postalCode} onChange={handleChange}
-                      className="w-full border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-secondary/40"
-                      placeholder="44600" />
+                    <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Postal Code</label>
+                    <input
+                      name="postalCode" value={form.postalCode} onChange={handleChange}
+                      className="w-full border border-border rounded-xl px-4 py-3 text-sm text-text-primary bg-surface focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary transition-colors placeholder:text-text-muted"
+                      placeholder="44600"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-1.5">Order Notes <span className="normal-case font-normal text-text-muted">(optional)</span></label>
+                    <textarea
+                      name="notes" value={form.notes} onChange={handleChange} rows={2}
+                      className="w-full border border-border rounded-xl px-4 py-3 text-sm text-text-primary bg-surface focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary transition-colors resize-none placeholder:text-text-muted"
+                      placeholder="Any special instructions for delivery..."
+                    />
                   </div>
                 </div>
               </div>
-
-              <div className="bg-surface rounded-xl border border-border p-6" style={{ boxShadow: "var(--shadow-card)" }}>
-                <h2 className="font-bold text-text-primary mb-4">Payment Method</h2>
-                <div className="space-y-3">
-                  {PAYMENT_METHODS.map((m) => (
-                    <label
-                      key={m.value}
-                      className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-colors ${paymentMethod === m.value ? "border-secondary bg-secondary/5" : "border-border hover:border-secondary/40"}`}
-                    >
-                      <input type="radio" name="paymentMethod" value={m.value}
-                        checked={paymentMethod === m.value}
-                        onChange={() => setPaymentMethod(m.value)} className="accent-secondary" />
-                      <span className="text-lg">{m.icon}</span>
-                      <span className="font-medium text-text-primary text-sm">{m.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-surface rounded-xl border border-border p-6" style={{ boxShadow: "var(--shadow-card)" }}>
-                <h2 className="font-bold text-text-primary mb-4">Order Notes (optional)</h2>
-                <textarea name="notes" value={form.notes} onChange={handleChange} rows={3}
-                  className="w-full border border-border rounded-lg px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-secondary/40 resize-none"
-                  placeholder="Any special instructions for delivery..." />
-              </div>
             </div>
 
-            <div>
-              <div className="bg-surface rounded-xl border border-border p-6 sticky top-20" style={{ boxShadow: "var(--shadow-card)" }}>
-                <h2 className="font-bold text-text-primary mb-4">Order Summary</h2>
-                <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
-                  {cart.items.map((item) => (
-                    <div key={item._id} className="flex justify-between text-sm text-text-secondary">
-                      <span className="line-clamp-1 flex-1">{item.product.name} × {item.quantity}</span>
-                      <span className="shrink-0 ml-2 font-medium text-text-primary">NPR {(item.price * item.quantity).toLocaleString()}</span>
+            {/* ── RIGHT: Payment summary card ── */}
+            <div className="lg:col-span-2">
+              <div className="bg-surface rounded-2xl border border-border overflow-hidden sticky top-20" style={{ boxShadow: "var(--shadow-lg)" }}>
+
+                {/* Payment header */}
+                <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border">
+                  <h2 className="font-bold text-text-primary text-lg">Payment</h2>
+                  <span className="text-xs font-semibold text-text-muted bg-surface-low px-2.5 py-1 rounded-full uppercase tracking-wide">
+                    {itemCount} {itemCount === 1 ? "item" : "items"}
+                  </span>
+                </div>
+
+                {/* Breakdown */}
+                <div className="px-6 py-5 space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-secondary">Subtotal</span>
+                    <span className="font-semibold text-text-primary">NPR {subtotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-secondary">Delivery</span>
+                    <span className={`font-semibold ${shipping === 0 ? "text-secondary" : "text-text-primary"}`}>
+                      {shipping === 0 ? "FREE" : `NPR ${shipping}`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-text-secondary">VAT (13%)</span>
+                    <span className="font-semibold text-text-primary">NPR {vat.toLocaleString()}</span>
+                  </div>
+                  <div className="pt-3 border-t border-border flex justify-between">
+                    <span className="font-bold text-text-primary">Total</span>
+                    <span className="font-bold text-text-primary text-lg">NPR {total.toLocaleString()}</span>
+                  </div>
+                  {subtotal > 0 && subtotal < 5000 && (
+                    <p className="text-xs text-tertiary font-medium text-center pt-1">
+                      Add NPR {(5000 - subtotal).toLocaleString()} more for free delivery!
+                    </p>
+                  )}
+                </div>
+
+                {/* Discount code */}
+                <div className="px-6 pb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowDiscount((s) => !s)}
+                    className="w-full flex items-center justify-between py-3 px-4 rounded-xl border border-border text-sm text-text-secondary hover:border-secondary/40 hover:text-secondary transition-colors"
+                  >
+                    <span className="font-medium">I have a discount code</span>
+                    <span className="text-lg leading-none">{showDiscount ? "−" : "+"}</span>
+                  </button>
+                  {showDiscount && (
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="text"
+                        value={discountCode}
+                        onChange={(e) => setDiscountCode(e.target.value)}
+                        placeholder="Enter code"
+                        className="flex-1 border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-secondary/30 focus:border-secondary transition-colors"
+                      />
+                      <button
+                        type="button"
+                        className="px-4 py-2.5 bg-secondary text-white text-sm font-semibold rounded-xl hover:bg-secondary/90 transition-colors"
+                      >
+                        Apply
+                      </button>
                     </div>
-                  ))}
+                  )}
                 </div>
-                <hr className="border-border mb-3" />
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-text-secondary">
-                    <span>Subtotal</span><span>NPR {subtotal.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-text-secondary">
-                    <span>Shipping</span>
-                    <span className={shipping === 0 ? "text-secondary" : ""}>{shipping === 0 ? "FREE" : `NPR ${shipping}`}</span>
-                  </div>
-                  <div className="flex justify-between text-text-secondary">
-                    <span>VAT (13%)</span><span>NPR {vat.toLocaleString()}</span>
-                  </div>
-                  <hr className="border-border" />
-                  <div className="flex justify-between font-bold text-text-primary">
-                    <span>Total</span><span>NPR {total.toLocaleString()}</span>
+
+                {/* Payment method */}
+                <div className="px-6 pb-5">
+                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-3">Pay with</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PAYMENT_METHODS.map((m) => (
+                      <button
+                        key={m.value}
+                        type="button"
+                        onClick={() => setPaymentMethod(m.value)}
+                        className={`py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${
+                          paymentMethod === m.value
+                            ? "border-transparent text-white scale-[1.02] shadow-md"
+                            : "border-border text-text-secondary hover:border-secondary/30 bg-surface"
+                        }`}
+                        style={paymentMethod === m.value ? { backgroundColor: m.bg } : {}}
+                      >
+                        {m.short}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <button
-                  type="submit" disabled={submitting || cart.items.length === 0}
-                  className="mt-5 w-full bg-secondary text-white font-semibold py-3 rounded-xl hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {submitting ? "Placing Order..." : "Place Order"}
-                </button>
-                <p className="text-xs text-text-muted text-center mt-2">🔒 Secure &amp; encrypted</p>
+
+                {/* Confirm button */}
+                <div className="px-6 pb-6">
+                  <button
+                    type="submit"
+                    disabled={submitting || cart.items.length === 0}
+                    className="w-full flex items-center justify-between bg-primary text-white font-semibold py-4 px-5 rounded-2xl hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors group"
+                  >
+                    <span className="text-sm">{submitting ? "Placing Order..." : "Confirm payment"}</span>
+                    <span
+                      className="flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-lg"
+                      style={{ backgroundColor: selectedMethod.bg === "#0f172a" ? "#1e293b" : selectedMethod.bg }}
+                    >
+                      <span>
+                        {selectedMethod.value === "cod" ? "💵" : selectedMethod.value === "khalti" ? "🟣" : "🟢"}
+                      </span>
+                      <span>{selectedMethod.short}</span>
+                    </span>
+                  </button>
+                  <p className="text-xs text-text-muted text-center mt-3 flex items-center justify-center gap-1">
+                    <span>🔒</span>
+                    <span>Secure &amp; encrypted checkout</span>
+                  </p>
+                </div>
+
               </div>
             </div>
+
           </div>
         </form>
       </main>
